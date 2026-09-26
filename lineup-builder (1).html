@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build the Lineup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0b0e14;
+    --panel: #141a29;
+    --panel-2: #1a2233;
+    --line: #262f42;
+    --text: #f2f4f8;
+    --text-muted: #8892a3;
+    --accent: #4fd1c5;
+    --accent-dim: #2c5c57;
+    --danger: #e5555a;
+    --good: #58c27d;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+  }
+
+  h1,h2,h3, .display{
+    font-family: 'Oswald', 'Inter', sans-serif;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding: 14px 24px 8px;
+    max-width: 1160px;
+    margin: 0 auto;
+    width: 100%;
+    flex: none;
+  }
+  .hero .kicker{
+    color: var(--accent);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .hero h1{
+    font-size: clamp(20px, 2.4vw, 26px);
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 2px;
+    max-width: 720px;
+  }
+  .hero p{
+    color: var(--text-muted);
+    max-width: 640px;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  /* ---------- Layout ---------- */
+  html,body{ overflow: hidden; }
+  body{
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .layout{
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  #tiers{
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .sidebar{
+    height: 100%;
+    overflow-y: auto;
+  }
+  footer{ flex: none; }
+
+  /* Only true phone widths give up on fitting one screen and scroll normally */
+  @media (max-width: 560px){
+    html,body{ overflow: auto; height: auto; }
+    body{ display: block; height: auto; }
+    .layout{
+      grid-template-columns: 1fr;
+      overflow: visible;
+      flex: none;
+      height: auto;
+    }
+    #tiers{ height: auto; overflow: visible; }
+    .sidebar{ height: auto; overflow: visible; margin-top: 16px; }
+  }
+
+  /* ---------- Tiers ---------- */
+  .tier{
+    margin-bottom: 12px;
+  }
+  .tier-head{
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tier-price{
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .tier-label{
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .card-grid{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  @media (max-width: 720px){
+    .card-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .position-header{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    background: var(--bg);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .position-header span{
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-align: center;
+  }
+  @media (max-width: 720px){
+    .position-header{ display: none; }
+  }
+
+  .player-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--team-color, var(--line));
+    border-radius: 12px;
+    padding: 8px 9px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+  }
+  .player-team{
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+  }
+  .player-card:hover{
+    border-color: var(--accent-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .player-card.selected{
+    border-color: var(--accent);
+    background: rgba(79, 209, 197, 0.1);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .player-card.blocked{
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .player-card.blocked:hover{ transform:none; border-color: var(--line); box-shadow:none; }
+
+  .select-check{
+    display: none;
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 10px;
+    font-weight: 700;
+    align-items: center;
+    justify-content: center;
+  }
+  .player-card.selected .select-check{ display: flex; }
+  .player-card.selected .player-team{ opacity: 0; }
+
+  .pos-badge{
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--text-muted);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .player-card.selected .pos-badge{ background: var(--accent); }
+
+  .player-name{
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .player-meta{
+    display:flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .player-meta .score{ color: var(--text); font-weight: 600; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .sidebar h3{
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .sidebar .sub{
+    color: var(--text-muted);
+    font-size: 11.5px;
+    margin-bottom: 10px;
+  }
+
+  .slot{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 7px 8px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    transition: background 0.15s ease;
+  }
+  .slot.filled{ background: rgba(79, 209, 197, 0.08); }
+  .slot-left{ display:flex; align-items:center; gap: 10px; }
+  .slot-pos{
+    font-family:'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--text-muted);
+    width: 32px;
+    height: 22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .slot.filled .slot-pos{ background: var(--accent); }
+  .slot-name{ font-size: 13.5px; }
+  .slot-name.empty{ color: var(--text-muted); font-style: normal; }
+  .slot-price{ font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+  .meter-row{
+    margin-top: 12px;
+  }
+  .meter-label{
+    display:flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  .meter-label .cap-remaining{ color: var(--text-muted); }
+  .meter-track{
+    height: 7px;
+    border-radius: 5px;
+    background: var(--panel-2);
+    overflow: hidden;
+  }
+  .meter-fill{
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.2s ease, background 0.2s ease;
+  }
+  .meter-fill.over{ background: var(--danger); }
+
+  .actions{
+    margin-top: 12px;
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  button.btn{
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+  }
+  button.btn:hover{ border-color: var(--accent-dim); background: var(--panel-2); }
+  button.btn:active{ transform: scale(0.98); }
+  button.btn.primary{
+    background: var(--accent);
+    color: #0b1f1d;
+    border-color: var(--accent);
+  }
+  button.btn.primary:hover{ background: #6adbd0; }
+
+  .note{
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    min-height: 16px;
+  }
+  .note.warn{ color: var(--danger); }
+  .note.win{ color: var(--good); }
+
+  footer{
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 8px 24px 12px;
+    width: 100%;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .modal-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 16px;
+  }
+  .modal-overlay.open{ display: flex; }
+  .modal-row{
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 640px;
+  }
+  .modal-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 24px 22px;
+    max-width: 300px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: center;
+  }
+  .modal-kicker{
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .modal-score{
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .modal-sub{
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .modal-rank{
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 9px 10px;
+  }
+  .modal-btn-row{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .modal-btn-row .btn{ width: 100%; }
+  .optimal-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+  }
+  .optimal-row:last-child{ border-bottom: none; }
+  .optimal-pos{
+    font-family:'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--text-muted);
+    width: 28px;
+    height: 20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .optimal-name{ font-size: 13px; flex: 1; }
+  .optimal-team{ font-size: 11px; color: var(--text-muted); }
+  .optimal-price{ font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="kicker">2025–26 NBA SEASON — REAL STATS</div>
+    <h1>Build your dream lineup.</h1>
+    <p>Pick one point guard, shooting guard, small forward, power forward and center. Spend up to $15 total — bigger names cost more, so mix stars with smart value picks.</p>
+  </div>
+
+  <div class="layout">
+    <div id="tiers"></div>
+
+    <div class="sidebar">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+        <h3>Your team</h3>
+        <span id="pickCount" style="font-size:11.5px; color:var(--text-muted); font-weight:600;">0 of 5 picked</span>
+      </div>
+      <div class="sub">Tap a player below to add or remove them.</div>
+
+      <div id="slots"></div>
+
+      <div class="meter-row">
+        <div class="meter-label">
+          <span>Budget</span>
+          <span class="cap-remaining" id="capText">$0 / $15</span>
+        </div>
+        <div class="meter-track"><div class="meter-fill" id="capFill"></div></div>
+        <div class="note warn" id="budgetWarn" style="margin-top:8px"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="resetBtn">Start over</button>
+      </div>
+
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+
+  <footer>
+    Scores come from this season's real per-game stats (efficiency, points, rebounds, assists, steals+blocks), weighted for each position. Price reflects how a player ranks among others at their position.
+  </footer>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-row">
+      <div class="modal-card">
+        <div class="modal-kicker">Nice lineup!</div>
+        <div class="modal-score" id="modalScore">–</div>
+        <div class="modal-sub">out of 100</div>
+        <div class="modal-rank" id="modalRank"></div>
+        <div class="modal-btn-row">
+          <button class="btn primary" id="modalClose">Play again</button>
+          <button class="btn" id="showBestBtn">See the best possible lineup</button>
+        </div>
+      </div>
+      <div class="modal-card" id="optimalCard" style="display:none">
+        <div class="modal-kicker">Best possible</div>
+        <div class="modal-score" id="optimalScore">–</div>
+        <div class="modal-sub">out of 100</div>
+        <div id="optimalList"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- Data ----------
+  // price: 1-5 (set by rank within position), score: 0-100
+  // Score is a weighted percentile composite built from this season's real per-game
+  // stats (scoring efficiency via TS%, points, rebounds, assists, steals+blocks, and
+  // turnovers), weighted differently per position. Top scorer at each position is $5,
+  // the next is $4, and so on down to $1.
+  const PLAYERS = [
+    // $5 tier
+    { id:'p1',  name:'Shai Gilgeous-Alexander', pos:'PG', price:5, score:82.8, team:'OKC' },
+    { id:'p2',  name:'Anthony Edwards',         pos:'SG', price:5, score:63.9, team:'MIN' },
+    { id:'p3',  name:'Kawhi Leonard',           pos:'SF', price:5, score:67.4, team:'LAC' },
+    { id:'p4',  name:'Giannis Antetokounmpo',   pos:'PF', price:5, score:75.9, team:'MIL' },
+    { id:'p5',  name:'Nikola Jokić',            pos:'C',  price:5, score:90.1, team:'DEN' },
+    // $4 tier
+    { id:'p6',  name:'Luka Dončić',             pos:'PG', price:4, score:75.0, team:'LAL' },
+    { id:'p7',  name:'Donovan Mitchell',        pos:'SG', price:4, score:63.0, team:'CLE' },
+    { id:'p8',  name:'Kevin Durant',            pos:'SF', price:4, score:58.2, team:'HOU' },
+    { id:'p9',  name:'Evan Mobley',             pos:'PF', price:4, score:60.8, team:'CLE' },
+    { id:'p10', name:'Victor Wembanyama',       pos:'C',  price:4, score:79.1, team:'SAS' },
+    // $3 tier
+    { id:'p11', name:'Tyrese Maxey',            pos:'PG', price:3, score:74.4, team:'PHI' },
+    { id:'p12', name:'Devin Booker',            pos:'SG', price:3, score:45.1, team:'PHO' },
+    { id:'p13', name:'Jalen Johnson',           pos:'SF', price:3, score:58.1, team:'ATL' },
+    { id:'p14', name:'Scottie Barnes',          pos:'PF', price:3, score:56.3, team:'TOR' },
+    { id:'p15', name:'Rudy Gobert',             pos:'C',  price:3, score:70.4, team:'MIN' },
+    // $2 tier
+    { id:'p16', name:'Jamal Murray',            pos:'PG', price:2, score:69.1, team:'DEN' },
+    { id:'p17', name:'Dyson Daniels',           pos:'SG', price:2, score:41.2, team:'ATL' },
+    { id:'p18', name:'Deni Avdija',             pos:'SF', price:2, score:54.6, team:'POR' },
+    { id:'p19', name:'Lauri Markkanen',         pos:'PF', price:2, score:55.7, team:'UTA' },
+    { id:'p20', name:'Joel Embiid',             pos:'C',  price:2, score:62.9, team:'PHI' },
+    // $1 tier
+    { id:'p21', name:'Cade Cunningham',         pos:'PG', price:1, score:63.4, team:'DET' },
+    { id:'p22', name:'Derrick White',           pos:'SG', price:1, score:40.0, team:'BOS' },
+    { id:'p23', name:'LeBron James',            pos:'SF', price:1, score:54.3, team:'LAL' },
+    { id:'p24', name:'Zion Williamson',         pos:'PF', price:1, score:52.8, team:'NOP' },
+    { id:'p25', name:'Jarrett Allen',           pos:'C',  price:1, score:62.8, team:'CLE' },
+  ];
+
+  // Real team primary colors (used only as a thin accent stripe + abbreviation — no logos).
+  const TEAM_COLORS = {
+    OKC:'#007AC1', MIN:'#236192', LAC:'#C8102E', MIL:'#00471B', DEN:'#0E2240',
+    LAL:'#552583', CLE:'#860038', HOU:'#CE1141', SAS:'#C4CED4', PHI:'#006BB6',
+    PHO:'#E56020', ATL:'#E03A3E', TOR:'#CE1141', POR:'#E03A3E', UTA:'#002B5C',
+    DET:'#C8102E', BOS:'#007A33', NOP:'#0C2340',
+  };
+
+  const CAP = 15;
+  const SLOT_DEFS = [
+    { key:'PG', label:'PG' },
+    { key:'SG', label:'SG' },
+    { key:'SF', label:'SF' },
+    { key:'PF', label:'PF' },
+    { key:'C',  label:'C'  },
+  ];
+
+  // lineup: slotKey -> player id
+  let lineup = { PG:null, SG:null, SF:null, PF:null, C:null };
+  let lastCompleteSignature = null;
+
+  function lineupSignature(){
+    const ids = Object.values(lineup);
+    if(ids.some(id => !id)) return null;
+    const spend = ids.reduce((s,id) => s + PLAYERS.find(p=>p.id===id).price, 0);
+    if(spend > CAP) return null;
+    return ids.slice().sort().join('|');
+  }
+
+  function maybeShowCompletionModal(){
+    const sig = lineupSignature();
+    if(sig && sig !== lastCompleteSignature){
+      lastCompleteSignature = sig;
+      const ids = Object.values(lineup);
+      const total = ids.reduce((s,id) => s + PLAYERS.find(p=>p.id===id).score, 0);
+      const info = rankInfo(total);
+      const topPercent = Math.max(1, 100 - info.percentile);
+      document.getElementById('modalScore').textContent = (total / 5).toFixed(1);
+      document.getElementById('modalRank').textContent =
+        `Ranks #${info.rank} of ${info.count.toLocaleString()} lineups under the cap — top ${topPercent}%`;
+      document.getElementById('optimalCard').style.display = 'none';
+      document.getElementById('modalOverlay').classList.add('open');
+    } else if(!sig){
+      lastCompleteSignature = null;
+    }
+  }
+
+  function slotPosFor(slotKey){
+    const def = SLOT_DEFS.find(s => s.key === slotKey);
+    return def.pos || def.key;
+  }
+
+  function currentSpend(){
+    return Object.values(lineup).reduce((sum, pid) => {
+      if(!pid) return sum;
+      return sum + PLAYERS.find(p => p.id === pid).price;
+    }, 0);
+  }
+
+  function findOpenSlotFor(pos){
+    const candidates = SLOT_DEFS.filter(s => (s.pos || s.key) === pos).map(s => s.key);
+    for(const key of candidates){
+      if(!lineup[key]) return key;
+    }
+    return null; // all matching slots full
+  }
+
+  function slotHoldingPlayer(pid){
+    return Object.keys(lineup).find(key => lineup[key] === pid) || null;
+  }
+
+  // ---------- All valid lineup totals (for ranking) ----------
+  // 5 positions x 5 players each = 3,125 combinations; filter to ones under the cap,
+  // sorted ascending so we can binary-search where the current lineup's total lands.
+  let ALL_VALID_TOTALS = null;
+  function computeAllValidTotals(){
+    if(ALL_VALID_TOTALS) return ALL_VALID_TOTALS;
+    const byPos = pos => PLAYERS.filter(p => p.pos === pos);
+    const groups = SLOT_DEFS.map(def => byPos(def.pos || def.key));
+    const totals = [];
+    for(const pg of groups[0]) for(const sg of groups[1]) for(const sf of groups[2])
+      for(const pf of groups[3]) for(const c of groups[4]){
+        const cost = pg.price+sg.price+sf.price+pf.price+c.price;
+        if(cost > CAP) continue;
+        totals.push(pg.score+sg.score+sf.score+pf.score+c.score);
+      }
+    totals.sort((a,b) => a-b);
+    ALL_VALID_TOTALS = totals;
+    return totals;
+  }
+
+  function rankInfo(currentTotal){
+    const totals = computeAllValidTotals();
+    let lo = 0, hi = totals.length;
+    while(lo < hi){
+      const mid = (lo+hi) >> 1;
+      if(totals[mid] <= currentTotal) lo = mid+1; else hi = mid;
+    }
+    const beatsOrTies = lo; // number of valid lineups with total <= current
+    const rank = totals.length - beatsOrTies + 1; // 1 = best possible
+    const percentile = Math.round((beatsOrTies / totals.length) * 100);
+    return { rank, count: totals.length, percentile };
+  }
+
+  function setNote(msg, kind){
+    const el = document.getElementById('note');
+    el.textContent = msg || '';
+    el.className = 'note' + (kind ? ' ' + kind : '');
+  }
+
+  function togglePlayer(pid){
+    setNote('');
+    const player = PLAYERS.find(p => p.id === pid);
+    const heldSlot = slotHoldingPlayer(pid);
+
+    if(heldSlot){
+      lineup[heldSlot] = null;
+      render();
+      maybeShowCompletionModal();
+      return;
+    }
+
+    const openSlot = findOpenSlotFor(player.pos);
+    if(!openSlot){
+      setNote(`Your ${player.pos} spot is already taken. Remove that player first if you want to swap.`, 'warn');
+      return;
+    }
+
+    const spendWithout = currentSpend() - (lineup[openSlot] ? PLAYERS.find(p=>p.id===lineup[openSlot]).price : 0);
+    if(spendWithout + player.price > CAP){
+      setNote(`${player.name} would put you over the $${CAP} budget. Try someone cheaper, or free up room first.`, 'warn');
+      return;
+    }
+
+    lineup[openSlot] = pid;
+    render();
+    maybeShowCompletionModal();
+  }
+
+  function render(){
+    // Tiers / cards
+    const tiersEl = document.getElementById('tiers');
+    const byPrice = [5,4,3,2,1].map(price => ({
+      price, players: PLAYERS.filter(p => p.price === price)
+    }));
+
+    const positionHeader = `
+      <div class="position-header">
+        ${SLOT_DEFS.map(def => `<span>${def.label}</span>`).join('')}
+      </div>
+    `;
+
+    tiersEl.innerHTML = positionHeader + byPrice.map(tier => `
+      <div class="tier">
+        <div class="tier-head">
+          <div class="tier-price">$${tier.price}</div>
+          <div class="tier-label">${tier.price === 5 ? 'top tier' : tier.price === 1 ? 'value tier' : ''}</div>
+        </div>
+        <div class="card-grid">
+          ${tier.players.map(p => cardHTML(p)).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    tiersEl.querySelectorAll('.player-card').forEach(card => {
+      card.addEventListener('click', () => togglePlayer(card.dataset.id));
+    });
+
+    // Sidebar slots
+    const slotsEl = document.getElementById('slots');
+    slotsEl.innerHTML = SLOT_DEFS.map(def => {
+      const pid = lineup[def.key];
+      const player = pid ? PLAYERS.find(p => p.id === pid) : null;
+      const teamColor = player ? (TEAM_COLORS[player.team] || 'var(--line)') : 'var(--line)';
+      return `
+        <div class="slot ${player ? 'filled' : ''}">
+          <div class="slot-left">
+            <div class="slot-pos">${def.label}</div>
+            <div>
+              <div class="slot-name ${player ? '' : 'empty'}">${player ? player.name : 'Empty'}</div>
+              ${player ? `<div style="font-size:11px;color:${teamColor};font-weight:600;margin-top:1px">${player.team}</div>` : ''}
+            </div>
+          </div>
+          <div class="slot-price">${player ? '$' + player.price : ''}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Budget meter
+    const spend = currentSpend();
+    document.getElementById('capText').textContent = `$${spend} / $${CAP}`;
+    const fill = document.getElementById('capFill');
+    fill.style.width = Math.min(100, (spend / CAP) * 100) + '%';
+    fill.classList.toggle('over', spend > CAP);
+
+    const filledCount = Object.values(lineup).filter(Boolean).length;
+    const pickCount = document.getElementById('pickCount');
+    if(pickCount) pickCount.textContent = `${filledCount} of 5 picked`;
+
+    const budgetWarn = document.getElementById('budgetWarn');
+    if(spend >= CAP && filledCount < 5){
+      budgetWarn.textContent = `You've used all $${CAP} but still need ${5 - filledCount} more player${5-filledCount===1?'':'s'}. Remove someone to free up room.`;
+    } else {
+      budgetWarn.textContent = '';
+    }
+
+    // Score is intentionally not shown while building — it's revealed in the
+    // completion popup once all 5 slots are filled (see maybeShowCompletionModal).
+  }
+
+  function cardHTML(p){
+    const heldSlot = slotHoldingPlayer(p.id);
+    const isSelected = !!heldSlot;
+    const openSlot = findOpenSlotFor(p.pos);
+    const spendWithout = currentSpend() - (openSlot && lineup[openSlot] ? PLAYERS.find(x=>x.id===lineup[openSlot]).price : 0);
+    const wouldExceed = !isSelected && (spendWithout + p.price > CAP);
+    const noSlot = !isSelected && !openSlot;
+    const blocked = wouldExceed || noSlot;
+
+    const teamColor = TEAM_COLORS[p.team] || 'var(--line)';
+
+    return `
+      <div class="player-card ${isSelected ? 'selected' : ''} ${blocked ? 'blocked' : ''}" data-id="${p.id}" style="--team-color: ${teamColor}" title="${p.name}">
+        <div class="select-check">✓</div>
+        <div class="player-team">${p.team}</div>
+        <div class="pos-badge">${p.pos}</div>
+        <div class="player-name">${p.name}</div>
+        <div class="player-meta">
+          <span>$${p.price}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- Optimizer ----------
+  function findOptimal(){
+    const byPos = pos => PLAYERS.filter(p => p.pos === pos);
+    const PGs = byPos('PG'), SGs = byPos('SG'), SFs = byPos('SF'), PFs = byPos('PF'), Cs = byPos('C');
+
+    let best = null;
+    for(const pg of PGs){
+      for(const sg of SGs){
+        for(const sf of SFs){
+          for(const pf of PFs){
+            for(const c of Cs){
+              const cost = pg.price + sg.price + sf.price + pf.price + c.price;
+              if(cost > CAP) continue;
+              const total = pg.score + sg.score + sf.score + pf.score + c.score;
+              if(!best || total > best.total){
+                best = { total, cost, picks: { PG:pg.id, SG:sg.id, SF:sf.id, PF:pf.id, C:c.id } };
+              }
+            }
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  document.getElementById('showBestBtn').addEventListener('click', () => {
+    const best = findOptimal();
+    const optimalCard = document.getElementById('optimalCard');
+    if(!best){
+      optimalCard.style.display = 'none';
+      return;
+    }
+    const optimalList = document.getElementById('optimalList');
+    optimalList.innerHTML = SLOT_DEFS.map(def => {
+      const p = PLAYERS.find(pl => pl.id === best.picks[def.key]);
+      const teamColor = TEAM_COLORS[p.team] || 'var(--text-muted)';
+      return `
+        <div class="optimal-row">
+          <div class="optimal-pos">${def.label}</div>
+          <div class="optimal-name">${p.name}<div class="optimal-team" style="color:${teamColor}">${p.team}</div></div>
+          <div class="optimal-price">$${p.price}</div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('optimalScore').textContent = (best.total / 5).toFixed(1);
+    optimalCard.style.display = 'block';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    lineup = { PG:null, SG:null, SF:null, PF:null, C:null };
+    lastCompleteSignature = null;
+    setNote('');
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.getElementById('optimalCard').style.display = 'none';
+    render();
+  });
+
+  document.getElementById('modalClose').addEventListener('click', () => {
+    lineup = { PG:null, SG:null, SF:null, PF:null, C:null };
+    lastCompleteSignature = null;
+    setNote('');
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.getElementById('optimalCard').style.display = 'none';
+    render();
+  });
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if(e.target.id === 'modalOverlay'){
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.getElementById('optimalCard').style.display = 'none';
+    }
+  });
+
+  render();
+</script>
+
+</body>
+</html>
